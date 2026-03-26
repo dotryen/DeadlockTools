@@ -31,6 +31,11 @@ namespace DeadlockTools {
             Resource resource = new Resource();
             resource.Read(memStream, true, true);
 
+            if (resource.ResourceType != ResourceType.Model) {
+                await console.Output.WriteLineAsync($"File is not a model! Aborting...");
+                return;
+            }
+            
             Model modelBlock = (Model)resource.DataBlock;
             KVObject kvData = modelBlock.Data;
             KVObject modelInfo = kvData.GetProperty<KVObject>("m_modelInfo");
