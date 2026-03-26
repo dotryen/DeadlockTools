@@ -3,12 +3,13 @@ using CliFx.Attributes;
 using CliFx.Infrastructure;
 using ValveKeyValue;
 using ValveResourceFormat;
+using ValveResourceFormat.ResourceTypes;
 using ValveResourceFormat.Serialization.KeyValues;
 using KVObject = ValveResourceFormat.Serialization.KeyValues.KVObject;
 using KVValue = ValveResourceFormat.Serialization.KeyValues.KVValue;
 
 namespace DeadlockTools {
-    [Command("add ag2")]
+    [Command("add ag2", Description = "Adds AG2 Graph and Skeleton references needed for newer heroes.")]
     public class AddAnimGraphRefs : ICommand {
         private const string DEFAULT_GRAPH_FORMAT = "animgraphs/animgraph2/hero/hero.vnmgraph+{0}.vnmgraph";
         private const string UI_GRAPH_FORMAT = "animgraphs/animgraph2/hero/hero_ui.vnmgraph+{0}.vnmgraph";
@@ -22,40 +23,64 @@ namespace DeadlockTools {
         
         public async ValueTask ExecuteAsync(IConsole console) {
             await console.Output.WriteLineAsync("Opening file: " + TargetFile);
-            await using var fileStream = File.OpenRead(TargetFile);
+            await using FileStream fileStream = File.Open(TargetFile, FileMode.Open, FileAccess.ReadWrite);
 
+            // COPY FILE DATA INTO BUFFER
+            // VRF lazily loads many resources, we need a copy before overwriting
+            byte[] memBuffer = new byte[fileStream.Length];
+            await fileStream.ReadExactlyAsync(memBuffer);
+            using MemoryStream memStream = new MemoryStream(memBuffer);
+            
             await console.Output.WriteLineAsync("Reading resource data");
-            var resource = new Resource();
-            resource.Read(fileStream);
+            Resource resource = new Resource();
+            resource.Read(memStream, true, true);
 
-            var modelBlock = (ValveResourceFormat.ResourceTypes.Model)resource.DataBlock;
-
+            Model modelBlock = (Model)resource.DataBlock;
+            KVObject kvData = modelBlock.Data;
+            bool modified = false;
+            
             // GRAPH ARRAY
-            await console.Output.WriteLineAsync("Adding graph refs");
+            if (!kvData.ContainsKey("m_animGraph2Refs")) {
+                await console.Output.WriteLineAsync("Adding graph refs");
             
-            KVObject graphArray = new KVObject("graphRefs", true, 2);
-            graphArray.AddProperty(null, CreateRef("", string.Format(DEFAULT_GRAPH_FORMAT, HeroId)));
-            graphArray.AddProperty(null, CreateRef("ui", string.Format(UI_GRAPH_FORMAT, HeroId)));
+                KVObject graphArray = new KVObject("graphRefs", true, 2);
+                graphArray.AddProperty(null, CreateRef("", string.Format(DEFAULT_GRAPH_FORMAT, HeroId)));
+                graphArray.AddProperty(null, CreateRef("ui", string.Format(UI_GRAPH_FORMAT, HeroId)));
             
-            modelBlock.Data.AddProperty("m_animGraph2Refs", graphArray);
+                kvData.AddProperty("m_animGraph2Refs", graphArray);
+                modified = true;
+            } else {
+                using (console.WithForegroundColor(ConsoleColor.Yellow)) {
+                    await console.Output.WriteLineAsync("Graph refs already exist! skipping");
+                }
+            }
             
             // SKELETON REF
-            await console.Output.WriteLineAsync("Adding skeleton ref");
-            
-            KVObject skeletonArray = new KVObject("skeletonRefs", true, 1);
-            skeletonArray.AddProperty(null, new KVValue(KVValueType.String, KVFlag.Resource, string.Format(SKELETON_FORMAT, HeroId)));
-            
-            modelBlock.Data.AddProperty("m_vecNmSkeletonRefs", skeletonArray);
+            if (!kvData.ContainsKey("m_vecNmSkeletonRefs")) {
+                await console.Output.WriteLineAsync("Adding skeleton ref");
+                
+                KVObject skeletonArray = new KVObject("skeletonRefs", true, 1);
+                skeletonArray.AddProperty(null, new KVValue(KVValueType.String, KVFlag.Resource, string.Format(SKELETON_FORMAT, HeroId)));
+                
+                kvData.AddProperty("m_vecNmSkeletonRefs", skeletonArray);
+                modified = true;
+            } else {
+                using (console.WithForegroundColor(ConsoleColor.Yellow)) {
+                    await console.Output.WriteLineAsync("Skeleton refs already exist! skipping");
+                }
+            }
             
             // WRITE
-            await console.Output.WriteLineAsync("Overwriting target file");
-            var directory = Path.GetDirectoryName(TargetFile);
-            var fileName = Path.GetFileNameWithoutExtension(TargetFile);
-            // fileName += "_test";
-            fileName += ".vmdl_c";
+            if (modified) {
+                await console.Output.WriteLineAsync("Overwriting target file");
 
-            using var outStream = File.OpenWrite(Path.Combine(directory, fileName));
-            resource.Serialize(outStream);
+                fileStream.Position = 0;
+                fileStream.SetLength(0);
+                resource.Serialize(fileStream);
+                await console.Output.WriteLineAsync("Done!");
+            } else {
+                await console.Output.WriteLineAsync("No changes made");
+            }
         }
 
         private KVObject CreateRef(string id, string path) {
