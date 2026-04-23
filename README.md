@@ -6,19 +6,16 @@ This is also incredibly useful for those on Linux. As the CS2 SDK does not run o
 ## HOW TO USE
 The easiest way to use this is to write a small shell/batch file to quickly run a lot of commands.
 
-This is the shell script I use for my mod.
-
 <details>
-<summary>Shell script</summary>
+<summary>Example shell script</summary>
 
 ```
 #!/bin/sh
 
-DLL_PATH="/path/DeadlockTools.dll"
 VMDL_PATH="/mod/models/heroes_wip/mcginnis/mcginnis.vmdl_c"
 
-dotnet $DLL_PATH add ag2 $VMDL_PATH -h mcginnis
-dotnet $DLL_PATH fix unitstatus $VMDL_PATH
+./DeadlockTools add ag2 $VMDL_PATH -h mcginnis
+./DeadlockTools fix unitstatus $VMDL_PATH
 ```
 </details>
 
@@ -32,7 +29,7 @@ This command overwrites the file provided.
 
 The format looks like this:
 
-`./DeadlockTools.exe add ag2 <model> -h <hero>`
+`add ag2 <model> -h <hero>`
 
 | Parameter | Explanation |
 | -- | -- |
@@ -43,11 +40,11 @@ The format looks like this:
 
 For example, to add the needed references for McGinnis, this command can be used.
 
-`./DeadlockTools.exe add ag2 ./path/to/model.vmdl_c -h mcginnis`
+`DeadlockTools.exe add ag2 ./path/to/model.vmdl_c -h mcginnis`
 
 For Ivy.
 
-`./DeadlockTools.exe add ag2 ./path/to/model.vmdl_c -h ivy --override-skeleton -f heroes_staging "models/heroes_staging/tengu/tengu_v2/dmx/mesh/ivy.vnmskel"`
+`DeadlockTools.exe add ag2 ./path/to/model.vmdl_c -h ivy --override-skeleton -f heroes_staging "models/heroes_staging/tengu/tengu_v2/dmx/mesh/ivy.vnmskel"`
 
 </details>
 
@@ -58,7 +55,7 @@ For Ivy.
 
 The format looks like this:
 
-`./DeadlockTools.exe fix unitstatus <model>`
+`fix unitstatus <model>`
 
 | Parameter | Explanation |
 | -- | -- |
@@ -66,7 +63,7 @@ The format looks like this:
 
 Example:
 
-`./DeadlockTools.exe fix unitstatus ./path/to/model.vmdl_c`
+`DeadlockTools.exe fix unitstatus ./path/to/model.vmdl_c`
 
 </details>
 
