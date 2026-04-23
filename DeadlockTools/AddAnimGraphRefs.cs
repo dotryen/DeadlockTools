@@ -13,13 +13,21 @@ namespace DeadlockTools {
     public class AddAnimGraphRefs : ICommand {
         private const string DEFAULT_GRAPH_FORMAT = "animgraphs/animgraph2/hero/hero.vnmgraph+{0}.vnmgraph";
         private const string UI_GRAPH_FORMAT = "animgraphs/animgraph2/hero/hero_ui.vnmgraph+{0}.vnmgraph";
-        private const string SKELETON_FORMAT = "models/heroes_wip/{0}/{0}.vnmskel";
+        private const string SKELETON_FORMAT = "models/{1}/{0}/{0}.vnmskel";
         
         [CommandParameter(0)]
-        public required string TargetFile { get; set; }
+        public required string TargetFile { get; init; }
         
-        [CommandOption("hero", 'h', IsRequired = true)]
-        public required string HeroId { get; set; }
+        [CommandOption("hero", 'h', IsRequired = true, Description = "The hero's internal name.")]
+        public required string HeroId { get; init; }
+        [CommandOption("hero-folder", 'f', IsRequired = false, Description = "Folder the hero belongs to. Typically 'heroes_wip' or 'heroes_staging'.")]
+        public string HeroFolder { get; init; } = "heroes_wip";
+
+        /// <summary>
+        /// Extra option for heroes with weird skeleton files
+        /// </summary>
+        [CommandOption("override-skeleton", IsRequired = false, Description = "Path for heroes with unusual skeleton file placement. Overrides the default format using 'hero' and 'hero-folder' options.")]
+        public string? SkeletonOverride { get; init; } = null;
         
         public async ValueTask ExecuteAsync(IConsole console) {
             await console.Output.WriteLineAsync("Opening file: " + TargetFile);
@@ -65,7 +73,8 @@ namespace DeadlockTools {
                 await console.Output.WriteLineAsync("Adding skeleton ref");
                 
                 KVObject skeletonArray = new KVObject("skeletonRefs", true, 1);
-                skeletonArray.AddProperty(null, new KVValue(KVValueType.String, KVFlag.Resource, string.Format(SKELETON_FORMAT, HeroId)));
+                string value = SkeletonOverride ?? string.Format(SKELETON_FORMAT, HeroId, HeroFolder);
+                skeletonArray.AddProperty(null, new KVValue(KVValueType.String, KVFlag.Resource, value));
                 
                 kvData.AddProperty("m_vecNmSkeletonRefs", skeletonArray);
                 modified = true;

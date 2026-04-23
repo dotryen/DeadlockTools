@@ -37,11 +37,17 @@ The format looks like this:
 | Parameter | Explanation |
 | -- | -- |
 | `<model>` | The path to your `vmdl_c` file. Can be relative or absolute. |
-| `-h <hero>` | The hero ID. |
+| `-h <hero>` | The hero's internal name. (Doesn't always match the character's name. Ex: Mina is `vampirebat`) |
+| `-f <hero_folder>` | The folder the hero belongs to. Typically `heroes_wip` or `heroes_staging`. Defaults to wip. |
+| `--override-skeleton <path>` | Full skeleton path override for heroes with unusual file structures. |
 
 For example, to add the needed references for McGinnis, this command can be used.
 
 `./DeadlockTools.exe add ag2 ./path/to/model.vmdl_c -h mcginnis`
+
+For Ivy.
+
+`./DeadlockTools.exe add ag2 ./path/to/model.vmdl_c -h ivy --override-skeleton -f heroes_staging "models/heroes_staging/tengu/tengu_v2/dmx/mesh/ivy.vnmskel"`
 
 </details>
 
